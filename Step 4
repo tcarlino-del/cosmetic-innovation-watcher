@@ -1,0 +1,114 @@
+/**
+ * Cosmetic Innovation Watcher - Main Entry Point
+ * Orchestrates scraping from multiple sources and exports results
+ */
+
+const Apify = require('apify');
+const { scrapeNewsSites } = require('./utils/news-scrapers');
+const { scrapePressReleases } = require('./utils/press-release');
+const { scrapeSpecializedDB } = require('./utils/specialized-db');
+const { enrichWithLinkedIn } = require('./utils/linkedin');
+const { exportToCSV, exportToJSON } = require('./utils/export-utils');
+
+Apify.main(async () => {
+    const logger = Apify.getLogger();
+    logger.info('🧴 Cosmetic Innovation Watcher started');
+
+    try {
+        // Initialize dataset
+        const dataset = await Apify.openDataset('cosmetic-innovation-results');
+        await dataset.drop(); // Clear previous results
+        
+        let allProducts = [];
+
+        // 1. Scrape news sites
+        logger.info('📰 Scraping news sites (TechCrunch, Crunchbase, PitchBook)...');
+        try {
+            const newsProducts = await scrapeNewsSites();
+            allProducts = allProducts.concat(newsProducts);
+            logger.info(`✅ Found ${newsProducts.length} products from news sources`);
+        } catch (error) {
+            logger.error('❌ Error scraping news sites:', error.message);
+        }
+
+        // 2. Scrape press releases
+        logger.info('📢 Scraping press releases (PR Newswire, eSpeed)...');
+        try {
+            const prProducts = await scrapePressReleases();
+            allProducts = allProducts.concat(prProducts);
+            logger.info(`✅ Found ${prProducts.length} products from press releases`);
+        } catch (error) {
+            logger.error('❌ Error scraping press releases:', error.message);
+        }
+
+        // 3. Scrape specialized databases
+        logger.info('🎯 Scraping specialized databases (Cosmetic Intelligence, Beauty Index)...');
+        try {
+            const dbProducts = await scrapeSpecializedDB();
+            allProducts = allProducts.concat(dbProducts);
+            logger.info(`✅ Found ${dbProducts.length} products from specialized databases`);
+        } catch (error) {
+            logger.error('❌ Error scraping specialized databases:', error.message);
+        }
+
+        logger.info(`\n📊 Total products found: ${allProducts.length}`);
+
+        // 4. Enrich with LinkedIn data
+        logger.info('\n💼 Enriching company data with LinkedIn information...');
+        const enrichedProducts = [];
+        
+        for (let i = 0; i < allProducts.length; i++) {
+            const product = allProducts[i];
+            logger.info(`[${i + 1}/${allProducts.length}] Processing: ${product.productName}`);
+            
+            try {
+                const companyInfo = await enrichWithLinkedIn(product.company, product.country);
+                
+                product.contactName = companyInfo.name || 'N/A';
+                product.contactRole = companyInfo.role || 'N/A';
+                product.contactLinkedIn = companyInfo.linkedIn || 'N/A';
+                product.contactEmail = companyInfo.email || 'N/A';
+                product.contactPhone = companyInfo.phone || 'N/A';
+                product.enrichedAt = new Date().toISOString();
+                
+                enrichedProducts.push(product);
+            } catch (error) {
+                logger.warn(`⚠️ Could not enrich ${product.company}: ${error.message}`);
+                // Still add to results even if enrichment failed
+                product.contactName = 'N/A';
+                product.contactRole = 'N/A';
+                product.contactLinkedIn = 'N/A';
+                product.contactEmail = 'N/A';
+                product.contactPhone = 'N/A';
+                product.enrichedAt = new Date().toISOString();
+                enrichedProducts.push(product);
+            }
+        }
+
+        // 5. Remove duplicates
+        logger.info('\n🔄 Removing duplicates...');
+        const uniqueProducts = Array.from(
+            new Map(enrichedProducts.map(p => [p.productName, p])).values()
+        );
+        logger.info(`✅ ${enrichedProducts.length - uniqueProducts.length} duplicates removed`);
+
+        // 6. Save to Apify dataset
+        logger.info('\n💾 Saving results to Apify dataset...');
+        for (const product of uniqueProducts) {
+            await dataset.pushData(product);
+        }
+
+        // 7. Export to CSV and JSON
+        logger.info('📤 Exporting results...');
+        await exportToJSON(uniqueProducts, './outputs/results.json');
+        await exportToCSV(uniqueProducts, './outputs/results.csv');
+        logger.info('✅ Export completed');
+
+        logger.info('\n✨ Cosmetic Innovation Watcher completed successfully!');
+        logger.info(`📊 Final count: ${uniqueProducts.length} unique products`);
+        
+    } catch (error) {
+        logger.error('💥 Fatal error:', error);
+        throw error;
+    }
+});
