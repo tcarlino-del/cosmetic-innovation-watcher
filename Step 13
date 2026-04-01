@@ -1,0 +1,80 @@
+# Data Schema
+
+## Product Object
+
+Chaque produit scraté doit respecter cette structure:
+
+```json
+{
+  "productName": "string (required)",
+  "description": "string (required)",
+  "type": "string (cosmetic | dermo | biotech | health-tech | pharma | nanotech | sustainable-cosmetics)",
+  "launchDate": "string (YYYY-MM-DD format)",
+  "company": "string (required)",
+  "country": "string (France | USA | UK | Germany | China | Japan | India | INTERNATIONAL)",
+  "source": "string (URL)",
+  "sourceWebsite": "string (TechCrunch | PR Newswire | Cosmetic Intelligence | etc.)",
+  "scrapedAt": "string (ISO 8601 format)",
+  "contactName": "string",
+  "contactRole": "string",
+  "contactLinkedIn": "string (URL)",
+  "contactEmail": "string (email format)",
+  "contactPhone": "string",
+  "enrichedAt": "string (ISO 8601 format)",
+  "price": "string (optional)",
+  "ingredients": "array of strings (optional)",
+  "certifications": "array of strings (optional)",
+  "targetMarket": "string (optional)"
+}
+```
+
+## Field Descriptions
+
+| Field | Type | Description | Example |
+|-------|------|-------------|---------|
+| productName | string | Nom du produit cosmétique | "BeautyAI Pro" |
+| description | string | Description du produit | "Soin visage anti-âge utilisant l'IA..." |
+| type | string | Catégorie du produit | "dermo-tech" |
+| launchDate | string | Date estimée de sortie | "2026-06-15" |
+| company | string | Nom de l'entreprise | "InnovBeauty Labs" |
+| country | string | Pays d'origine | "France" |
+| source | string | URL de la source | "https://techcrunch.com/..." |
+| sourceWebsite | string | Nom du site source | "TechCrunch" |
+| scrapedAt | string | Timestamp du scraping | "2026-04-01T10:30:00Z" |
+| contactName | string | Nom du contact pertinent | "Marie Dupont" |
+| contactRole | string | Poste du contact | "Head of Innovation" |
+| contactLinkedIn | string | Profil LinkedIn | "https://linkedin.com/in/mariedupont" |
+| contactEmail | string | Email du contact | "m.dupont@innovbeauty.fr" |
+| contactPhone | string | Téléphone du contact | "+33 6 12 34 56 78" |
+| enrichedAt | string | Timestamp de l'enrichissement | "2026-04-01T11:00:00Z" |
+
+## CSV Export Format
+
+```csv
+productName,description,type,launchDate,company,country,source,sourceWebsite,scrapedAt,contactName,contactRole,contactLinkedIn,contactEmail,contactPhone,enrichedAt
+BeautyAI Pro,Soin visage anti-âge utilisant l'IA pour personnaliser le traitement,dermo-tech,2026-06-15,InnovBeauty Labs,France,https://techcrunch.com/...,TechCrunch,2026-04-01T10:30:00Z,Marie Dupont,Head of Innovation,https://linkedin.com/in/mariedupont,m.dupont@innovbeauty.fr,+33 6 12 34 56 78,2026-04-01T11:00:00Z
+```
+
+## JSON Export Format
+
+```json
+[
+  {
+    "productName": "BeautyAI Pro",
+    "description": "Soin visage anti-âge utilisant l'IA pour personnaliser le traitement",
+    "type": "dermo-tech",
+    "launchDate": "2026-06-15",
+    "company": "InnovBeauty Labs",
+    "country": "France",
+    "source": "https://techcrunch.com/...",
+    "sourceWebsite": "TechCrunch",
+    "scrapedAt": "2026-04-01T10:30:00Z",
+    "contactName": "Marie Dupont",
+    "contactRole": "Head of Innovation",
+    "contactLinkedIn": "https://linkedin.com/in/mariedupont",
+    "contactEmail": "m.dupont@innovbeauty.fr",
+    "contactPhone": "+33 6 12 34 56 78",
+    "enrichedAt": "2026-04-01T11:00:00Z"
+  }
+]
+```
