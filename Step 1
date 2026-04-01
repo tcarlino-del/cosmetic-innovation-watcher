@@ -1,0 +1,194 @@
+# 🧴 Cosmetic Innovation Watcher
+
+**Un actor Apify pour surveiller automatiquement les innovations cosmétiques et de santé en France et à l'international.**
+
+## 📌 Objectif
+
+Scraper quotidiennement les actualités, communiqués de presse et bases de données spécialisées pour détecter les nouveaux produits cosmétiques/santé en:
+- **R&D**
+- **Tests cliniques**
+- **Pré-lancement**
+- **Annonces presse**
+
+## 🎯 Résultats collectés
+
+Pour chaque produit trouvé:
+1. ✅ Nom du produit
+2. ✅ Description
+3. ✅ Type (cosmétique, dermo, biotech, etc.)
+4. ✅ Date estimée de sortie
+5. ✅ Entreprise/Laboratoire
+6. ✅ Pays
+7. ✅ Source fiable
+8. ✅ Contact pertinent (Innovation, Marketing, Business Dev)
+   - Nom + Poste
+   - LinkedIn
+   - Email/Téléphone
+
+## 📊 Sortie
+
+Export en **CSV** et **JSON** via Apify Dataset.
+
+## 🌍 Sources scrapées
+
+- 🔵 **Actualités** : TechCrunch, Crunchbase, PitchBook
+- 📰 **Communiqués de presse** : PR Newswire, eSpeed
+- 🏢 **Sites d'entreprises** : Basées de données cosmétiques
+- 🎯 **Bases spécialisées** : Cosmetic Intelligence, Beauty Innovation Index
+- 💼 **LinkedIn** : Profils d'entreprises + contacts
+
+## 🗺️ Zones géographiques
+
+- **Priorité** : France 🇫🇷
+- **International** : USA, UK, Europe, Asie 🌏
+
+## 🚀 Installation
+
+### Prérequis
+- Node.js 16+
+- Compte Apify (gratuit sur [apify.com](https://apify.com))
+- npm ou yarn
+
+### Steps
+
+```bash
+# 1. Cloner le repository
+git clone https://github.com/tcarlino-del/cosmetic-innovation-watcher.git
+cd cosmetic-innovation-watcher
+
+# 2. Installer les dépendances
+npm install
+
+# 3. Configurer les variables d'environnement
+cp .env.example .env
+# Éditer .env avec vos clés API
+
+# 4. Lancer localement
+npm start
+
+# 5. Déployer sur Apify (optionnel)
+apify push
+```
+
+## 📋 Structure du projet
+
+```
+cosmetic-innovation-watcher/
+├── README.md
+├── package.json
+├── apify.json
+├── .env.example
+├── .gitignore
+├── SCHEMA.md
+├── main.js                          # Point d'entrée principal
+├── utils/
+│   ├── news-scrapers.js             # TechCrunch, Crunchbase, PitchBook
+│   ├── press-release.js             # PR Newswire, eSpeed
+│   ├── specialized-db.js            # Cosmetic Intelligence, Beauty Index
+│   ├── linkedin.js                  # Enrichissement via Proxycurl/Scrapin
+│   ├── parse-utils.js               # Utilitaires de parsing communs
+│   └── export-utils.js              # Export CSV/JSON
+├── config/
+│   ├── sources.json                 # URLs et configuration des sources
+│   └── selectors.json               # CSS/XPath selectors par source
+└── outputs/
+    ├── results.json
+    └── results.csv
+```
+
+## 🔧 Configuration
+
+### Variables d'environnement (.env)
+
+```env
+# Apify
+APIFY_TOKEN=your_apify_token_here
+
+# APIs tierces (optionnel)
+PROXYCURL_API_KEY=your_proxycurl_key
+SCRAPIN_API_KEY=your_scrapin_key
+
+# Scraping
+MAX_REQUESTS_PER_SOURCE=50
+HEADLESS_BROWSER=true
+TIMEOUT=30000
+
+# Export
+EXPORT_FORMAT=json,csv
+OUTPUT_PATH=./outputs/
+```
+
+## 📊 Exemple de résultat JSON
+
+```json
+{
+  "productName": "BeautyAI Pro",
+  "description": "Soin visage anti-âge utilisant l'IA pour personnaliser le traitement",
+  "type": "dermo-tech",
+  "launchDate": "2026-06-15",
+  "company": "InnovBeauty Labs",
+  "country": "France",
+  "source": "https://techcrunch.com/...",
+  "contactName": "Marie Dupont",
+  "contactRole": "Head of Innovation",
+  "contactLinkedIn": "https://linkedin.com/in/mariedupont",
+  "contactEmail": "m.dupont@innovbeauty.fr",
+  "contactPhone": "+33 6 12 34 56 78",
+  "scrapedAt": "2026-04-01T10:30:00Z"
+}
+```
+
+## ⏰ Scheduling
+
+Cet actor est conçu pour s'exécuter **quotidiennement** via Apify Scheduler.
+
+### Configuration Apify Cloud
+
+1. Allez sur [https://console.apify.com](https://console.apify.com)
+2. Créez un nouvel actor depuis ce repo
+3. Allez dans "Schedules"
+4. Créez une nouvelle tâche programmée pour chaque jour à 09:00 UTC
+
+## ⚠️ Disclaimers
+
+- **Respect des ToS** : Ce script respecte les conditions d'utilisation de chaque site. Adaptez au besoin.
+- **Légalité** : Vérifiez la légalité du scraping dans votre juridiction.
+- **Rate Limiting** : Apify gère automatiquement les délais entre requêtes.
+- **Paywalls** : Certains sites (Crunchbase, PitchBook) nécessitent une API payante.
+
+## 🛠️ Troubleshooting
+
+### "Failed to scrape source X"
+- Vérifiez l'URL dans `config/sources.json`
+- Testez manuellement : `curl https://source-url.com`
+- Vérifiez les selectors CSS dans `config/selectors.json`
+
+### "No results found"
+- Les sources peuvent avoir changé de structure HTML
+- Mettez à jour les selectors dans `config/selectors.json`
+- Activez les logs: `DEBUG=*` npm start
+
+### "Rate limited"
+- Augmentez `REQUEST_INTERVAL` dans .env
+- Utilisez un proxy Apify (payant)
+
+## 🤝 Contribuer
+
+Contributions bienvenues ! Pour ajouter une nouvelle source:
+
+1. Créez une nouvelle fonction dans `utils/`
+2. Ajoutez la source dans `config/sources.json`
+3. Testez localement
+4. Ouvrez une Pull Request
+
+## 📄 License
+
+MIT
+
+## 📧 Support
+
+Pour toute question ou bug, ouvrez une issue GitHub.
+
+---
+
+**Dernière mise à jour** : 2026-04-01
