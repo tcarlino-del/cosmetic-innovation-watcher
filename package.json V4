@@ -1,0 +1,19 @@
+{
+  "name": "cosmetic-innovation-watcher",
+  "version": "1.0.0",
+  "description": "Apify actor to monitor cosmetic and health innovations",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "dependencies": {
+    "apify": "^3.4.5",
+    "crawlee": "^3.6.2",
+    "axios": "^1.6.2",
+    "dotenv": "^16.3.1",
+    "json2csv": "^6.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
