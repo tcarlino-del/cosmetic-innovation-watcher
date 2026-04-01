@@ -1,0 +1,105 @@
+/**
+ * Utility functions for parsing and normalizing data
+ */
+
+/**
+ * Extract launch date from various text formats
+ */
+exports.extractLaunchDate = (text) => {
+    if (!text) return new Date().toISOString().split('T')[0];
+
+    // Common patterns
+    const patterns = [
+        /(\d{1,2}\/\d{1,2}\/\d{4})/,  // MM/DD/YYYY
+        /(\d{1,2}-\d{1,2}-\d{4})/,    // MM-DD-YYYY
+        /(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{1,2}),?\s+(\d{4})/i,
+        /(\d{4})-(\d{1,2})-(\d{1,2})/  // YYYY-MM-DD
+    ];
+
+    for (const pattern of patterns) {
+        const match = text.match(pattern);
+        if (match) return match[0];
+    }
+
+    return new Date().toISOString().split('T')[0];
+};
+
+/**
+ * Normalize product type
+ */
+exports.normalizeProductType = (type) => {
+    const typeMapping = {
+        'skincare': 'cosmetic',
+        'makeup': 'cosmetic',
+        'haircare': 'cosmetic',
+        'fragrance': 'cosmetic',
+        'derm': 'dermo',
+        'dermatology': 'dermo',
+        'biotech': 'biotech',
+        'health-tech': 'health-tech',
+        'ai': 'biotech',
+        'pharma': 'pharma'
+    };
+
+    const normalized = type.toLowerCase().trim();
+    return typeMapping[normalized] || normalized;
+};
+
+/**
+ * Clean and normalize text
+ */
+exports.normalizeText = (text) => {
+    return text
+        .trim()
+        .replace(/\s+/g, ' ')
+        .replace(/[^a-zA-Z0-9\s\-.,&]/g, '');
+};
+
+/**
+ * Extract price information
+ */
+exports.extractPrice = (text) => {
+    const pricePatterns = [
+        /\$\s*([\d,.]+)/,           // $XXX
+        /€\s*([\d,.]+)/,            // €XXX
+        /£\s*([\d,.]+)/,            // £XXX
+        /(\d+)\s*(USD|EUR|GBP)/i    // XXX USD
+    ];
+
+    for (const pattern of pricePatterns) {
+        const match = text.match(pattern);
+        if (match) return match[1];
+    }
+
+    return 'N/A';
+};
+
+/**
+ * Validate email format
+ */
+exports.isValidEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+};
+
+/**
+ * Parse phone number
+ */
+exports.parsePhoneNumber = (phone) => {
+    if (!phone) return 'N/A';
+    
+    // Remove common formatting
+    return phone
+        .replace(/[\s\-().]/g, '')
+        .replace(/^0/, '+33')  // French format
+        .trim();
+};
+
+/**
+ * Remove duplicates from array
+ */
+exports.removeDuplicates = (array, key = 'productName') => {
+    return Array.from(
+        new Map(array.map(item => [item[key], item])).values()
+    );
+};
