@@ -1,0 +1,93 @@
+/**
+ * Export utilities for CSV and JSON formats
+ */
+
+const fs = require('fs');
+const path = require('path');
+
+/**
+ * Export data to JSON file
+ */
+exports.exportToJSON = async (data, filepath) => {
+    return new Promise((resolve, reject) => {
+        const dir = path.dirname(filepath);
+        
+        // Ensure output directory exists
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+
+        const json = JSON.stringify(data, null, 2);
+        
+        fs.writeFile(filepath, json, (err) => {
+            if (err) reject(err);
+            else resolve();
+        });
+    });
+};
+
+/**
+ * Export data to CSV file
+ */
+exports.exportToCSV = async (data, filepath) => {
+    return new Promise((resolve, reject) => {
+        const dir = path.dirname(filepath);
+        
+        // Ensure output directory exists
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+
+        if (!data || data.length === 0) {
+            reject(new Error('No data to export'));
+            return;
+        }
+
+        // Get all unique keys
+        const keys = Array.from(new Set(data.flatMap(Object.keys)));
+        
+        // Create CSV header
+        const header = keys.join(',');
+        
+        // Create CSV rows
+        const rows = data.map(row => {
+            return keys.map(key => {
+                const value = row[key] || '';
+                // Escape quotes and wrap in quotes if contains comma
+                return typeof value === 'string' && value.includes(',')
+                    ? `"${value.replace(/"/g, '""')}"`
+                    : value;
+            }).join(',');
+        });
+
+        const csv = [header, ...rows].join('\n');
+        
+        fs.writeFile(filepath, csv, (err) => {
+            if (err) reject(err);
+            else resolve();
+        });
+    });
+};
+
+/**
+ * Export data to multiple formats
+ */
+exports.exportMultiple = async (data, outputDir = './outputs') => {
+    const results = {};
+
+    try {
+        await exports.exportToJSON(data, path.join(outputDir, 'results.json'));
+        results.json = 'Success';
+    } catch (error) {
+        results.json = `Error: ${error.message}`;
+    }
+
+    try {
+        await exports.exportToCSV(data, path.join(outputDir, 'results.csv'));
+        results.csv = 'Success';
+    } catch (error) {
+        results.csv = `Error: ${error.message}`;
+    }
+
+    return results;
+};
