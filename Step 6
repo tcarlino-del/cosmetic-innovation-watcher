@@ -1,0 +1,113 @@
+/**
+ * Scrapes press releases for cosmetic innovations
+ * Sources: PR Newswire, eSpeed, BusinessWire
+ */
+
+const Apify = require('apify');
+const { CheerioCrawler } = require('crawlee');
+
+const sources = [
+    {
+        url: 'https://www.prnewswire.com/news-releases/news-releases-list/?pagesize=100&c=cosmetics',
+        name: 'PR Newswire Cosmetics',
+        selectors: {
+            releases: 'a.c-prNewsTile__link',
+            title: 'h2.c-prNewsStory__title'
+        }
+    },
+    {
+        url: 'https://www.businesswire.com/portal/site/home/news/?c=beauty',
+        name: 'BusinessWire Beauty',
+        selectors: {
+            releases: 'article.news-item',
+            title: 'h3.headline'
+        }
+    }
+];
+
+exports.scrapePressReleases = async () => {
+    const logger = Apify.getLogger();
+    const results = [];
+
+    for (const source of sources) {
+        logger.info(`Scraping ${source.name}...`);
+        
+        try {
+            const crawler = new CheerioCrawler({
+                maxRequestsPerCrawl: 100,
+                maxPagesPerCrawl: 5,
+                
+                async handlePageFunction({ request, $ }) {
+                    const releases = $(source.selectors.releases);
+                    
+                    releases.each((_, el) => {
+                        try {
+                            const $release = $(el);
+                            const title = $release.find(source.selectors.title).text().trim();
+                            const link = $release.attr('href');
+                            const text = $release.text();
+                            
+                            // Extract date if available
+                            const dateMatch = text.match(/(\d{1,2}\/\d{1,2}\/\d{4})/);
+                            const launchDate = dateMatch ? dateMatch[1] : new Date().toISOString().split('T')[0];
+                            
+                            if (title && link) {
+                                results.push({
+                                    productName: title,
+                                    description: text.substring(0, 500),
+                                    type: 'press-release',
+                                    source: link.startsWith('http') ? link : `https://prnewswire.com${link}`,
+                                    sourceWebsite: source.name,
+                                    country: extractCountry(text),
+                                    launchDate: launchDate,
+                                    company: extractCompanyNameFromPR(title),
+                                    scrapedAt: new Date().toISOString()
+                                });
+                            }
+                        } catch (error) {
+                            logger.warn(`Error parsing press release: ${error.message}`);
+                        }
+                    });
+                },
+                
+                async errorHandler({ request, error }) {
+                    logger.error(`Request to ${request.url} failed: ${error.message}`);
+                }
+            });
+
+            await crawler.run([source.url]);
+        } catch (error) {
+            logger.error(`Error scraping ${source.name}: ${error.message}`);
+        }
+    }
+
+    return results;
+};
+
+function extractCompanyNameFromPR(title) {
+    // Extract company name from PR title (usually before "announces" or "launches")
+    const match = title.match(/^(.+?)\s+(announces|launches|introduces|unveils)/i);
+    return match ? match[1].trim() : 'Unknown Company';
+}
+
+function extractCountry(text) {
+    const countryPatterns = {
+        'France': ['France', 'Français', 'Paris'],
+        'USA': ['United States', 'USA', 'New York', 'California'],
+        'UK': ['United Kingdom', 'UK', 'London'],
+        'Germany': ['Germany', 'Berlin', 'Deutsch'],
+        'China': ['China', 'Beijing', 'Shanghai'],
+        'Japan': ['Japan', 'Tokyo'],
+        'India': ['India', 'Mumbai', 'Delhi']
+    };
+
+    for (const [country, keywords] of Object.entries(countryPatterns)) {
+        for (const keyword of keywords) {
+            if (text.includes(keyword)) {
+                return country;
+            }
+        }
+    }
+
+    return 'INTERNATIONAL';
+}
