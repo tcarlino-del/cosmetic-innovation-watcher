@@ -1,0 +1,104 @@
+/**
+ * Scrapes news sites for cosmetic innovations
+ * Sources: TechCrunch, Crunchbase, PitchBook
+ */
+
+const Apify = require('apify');
+const { CheerioCrawler, PlaywrightCrawler } = require('crawlee');
+
+const sources = [
+    {
+        url: 'https://techcrunch.com/tag/beauty/',
+        name: 'TechCrunch Beauty',
+        selectors: {
+            articles: 'article',
+            title: 'h2.post-block__title',
+            link: 'a.post-block__title__link',
+            excerpt: '.post-block__content'
+        }
+    },
+    {
+        url: 'https://www.beautytechtoday.com/news/',
+        name: 'BeautyTech Today',
+        selectors: {
+            articles: 'article.news-item',
+            title: 'h3.news-title',
+            link: 'a.news-link',
+            excerpt: '.news-excerpt'
+        }
+    }
+];
+
+exports.scrapeNewsSites = async () => {
+    const logger = Apify.getLogger();
+    const results = [];
+
+    for (const source of sources) {
+        logger.info(`Scraping ${source.name}...`);
+        
+        try {
+            const crawler = new CheerioCrawler({
+                maxRequestsPerCrawl: 50,
+                maxPagesPerCrawl: 10,
+                
+                async handlePageFunction({ request, $ }) {
+                    const articles = $(source.selectors.articles);
+                    
+                    articles.each((_, el) => {
+                        try {
+                            const $article = $(el);
+                            const title = $article.find(source.selectors.title).text().trim();
+                            const link = $article.find(source.selectors.link).attr('href');
+                            const excerpt = $article.find(source.selectors.excerpt).text().trim();
+                            
+                            if (title && link) {
+                                results.push({
+                                    productName: title,
+                                    description: excerpt,
+                                    type: 'news',
+                                    source: link,
+                                    sourceWebsite: source.name,
+                                    country: 'INTERNATIONAL',
+                                    launchDate: new Date().toISOString().split('T')[0],
+                                    company: extractCompanyName(title),
+                                    scrapedAt: new Date().toISOString()
+                                });
+                            }
+                        } catch (error) {
+                            logger.warn(`Error parsing article: ${error.message}`);
+                        }
+                    });
+                },
+                
+                async errorHandler({ request, error }) {
+                    logger.error(`Request to ${request.url} failed: ${error.message}`);
+                }
+            });
+
+            await crawler.run([source.url]);
+        } catch (error) {
+            logger.error(`Error scraping ${source.name}: ${error.message}`);
+        }
+    }
+
+    return results;
+};
+
+/**
+ * Extract company name from article title
+ */
+function extractCompanyName(text) {
+    // Simple heuristic: usually first capitalized words
+    const words = text.split(' ');
+    const companyWords = [];
+    
+    for (const word of words) {
+        if (/^[A-Z]/.test(word) && companyWords.length < 3) {
+            companyWords.push(word);
+        } else if (companyWords.length > 0) {
+            break;
+        }
+    }
+    
+    return companyWords.join(' ') || 'Unknown Company';
+}
