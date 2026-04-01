@@ -1,0 +1,24 @@
+# Apify Configuration
+APIFY_TOKEN=your_apify_token_here
+
+# Third-party APIs (Optional)
+PROXYCURL_API_KEY=your_proxycurl_key_here
+SCRAPIN_API_KEY=your_scrapin_key_here
+
+# Scraping Configuration
+MAX_REQUESTS_PER_SOURCE=50
+REQUEST_INTERVAL=2000
+HEADLESS_BROWSER=true
+TIMEOUT=30000
+
+# Export Configuration
+EXPORT_FORMAT=json,csv
+OUTPUT_PATH=./outputs/
+
+# Logging
+DEBUG=false
+LOG_LEVEL=info
+
+# Geographic Filtering
+PRIMARY_COUNTRY=France
+INCLUDE_INTERNATIONAL=true
